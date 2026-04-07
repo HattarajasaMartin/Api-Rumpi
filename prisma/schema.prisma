@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  username      String   @unique
+  full_name     String?
+  email         String   @unique
+  password      String
+  photo_profile String?
+  bio           String?
+  created_at    DateTime @default(now())
+  created_by    Int? // FK ke diri sendiri (opsional sesuai SQL)
+  updated_at    DateTime @updatedAt
+  updated_by    Int?
+
+  // Relations
+  threads Thread[]
+  likes   Like[]
+  replies Reply[]
+
+  // Following Relations
+  following Following[] @relation("UserFollowing")
+  followers Following[] @relation("UserFollowers")
+
+  @@map("users")
+}
+
+model Thread {
+  id                Int      @id @default(autoincrement())
+  content           String   @db.VarChar // varchar
+  image             String?  @db.VarChar
+  number_of_replies Int      @default(0)
+  created_at        DateTime @default(now())
+  created_by        Int // Foreign Key ke User.id
+  updated_at        DateTime @updatedAt
+  updated_by        Int?
+
+  // Relations
+  user    User    @relation(fields: [created_by], references: [id], onDelete: Cascade)
+  likes   Like[]
+  replies Reply[]
+
+  @@map("threads")
+}
+
+model Like {
+  id         Int      @id @default(autoincrement())
+  user_id    Int // Foreign Key
+  thread_id  Int // Foreign Key
+  created_at DateTime @default(now())
+  created_by Int?
+  updated_at DateTime @updatedAt
+  updated_by Int?
+
+  // Relations
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  thread Thread @relation(fields: [thread_id], references: [id], onDelete: Cascade)
+
+  @@map("likes")
+}
+
+model Reply {
+  id         Int      @id @default(autoincrement())
+  user_id    Int // Foreign Key
+  thread_id  Int // Foreign Key
+  image      String?  @db.VarChar
+  content    String   @db.VarChar
+  created_at DateTime @default(now())
+  created_by Int?
+  updated_at DateTime @updatedAt
+  updated_by Int?
+
+  // Relations
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  thread Thread @relation(fields: [thread_id], references: [id], onDelete: Cascade)
+
+  @@map("replies")
+}
+
+model Following {
+  id           Int      @id @default(autoincrement())
+  following_id Int // User yang diikuti
+  follower_id  Int // User yang mengikuti
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  following User @relation("UserFollowing", fields: [following_id], references: [id], onDelete: Cascade)
+  follower  User @relation("UserFollowers", fields: [follower_id], references: [id], onDelete: Cascade)
+
+  @@map("following")
+}
