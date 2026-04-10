@@ -6,15 +6,15 @@ export interface AuthRequest extends Request {
 }
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = req.headers.authorization?.split(' ')[1]; // Ngambil token dari header Authorization
 
-    if (!token) return res.status(401).json({ message: "Unauthorized" });
+    if (!token) return res.status(401).json({ message: "Unauthorized" }); // kalau token tidak ditemukan
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number }; // ngecek tokennya benar atau tidak
         req.user = decoded;
         next();
     } catch (err) {
-        res.status(403).json({ message: "Invalid Token" });
+        res.status(403).json({ message: "Invalid Token" }); // kalau gapunya token, maka "Invalid Token"
     }
 };
