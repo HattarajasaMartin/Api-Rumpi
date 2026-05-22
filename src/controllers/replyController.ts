@@ -1,17 +1,8 @@
 import { Response } from 'express';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middlewares/authMiddleware';
-import { Queue } from 'bullmq';
 
-// Inisialisasi Antrean (Queue) untuk Reply
-const replyQueue = new Queue('reply-queue', {
-    connection: {
-        host: process.env.REDIS_HOST || '127.0.0.1',
-        port: Number(process.env.REDIS_PORT) || 6379
-    }
-});
-
-// GET ALL REPLIES (Tetap langsung ke DB karena ini operasi Read)
+// GET ALL REPLIES
 export const getReplies = async (req: AuthRequest, res: Response) => {
     try {
         const { thread_id } = req.query;
@@ -44,7 +35,7 @@ export const getReplies = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// CREATE REPLY (Sekarang menggunakan Queue & Worker)
+// CREATE REPLY - langsung ke DB + socket realtime
 export const createReply = async (req: AuthRequest, res: Response) => {
     try {
         const { content, thread_id } = req.body;
@@ -54,21 +45,36 @@ export const createReply = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: "Konten dan thread_id wajib diisi" });
         }
 
-        // Kirim data ke Antrean (Redis)
-        // Data ini akan ditangkap oleh replyWorker.ts
-        await replyQueue.add('new-reply-job', {
-            content,
-            thread_id: Number(thread_id),
-            userId: userId as number,
+        const reply = await prisma.reply.create({
+            data: {
+                content,
+                thread_id: Number(thread_id),
+                user_id: userId as number,
+            },
+            include: {
+                user: {
+                    select: { username: true, full_name: true, photo_profile: true }
+                }
+            }
         });
 
-        // Berikan respon cepat ke Frontend (Status 202 = Accepted)
-        return res.status(202).json({
-            message: "Balasan sedang diproses dalam antrean",
-            status: "processing"
-        });
+        const result = {
+            id: reply.id,
+            content: reply.content,
+            image: reply.image,
+            username: reply.user.username,
+            name: reply.user.full_name,
+            avatar: reply.user.photo_profile,
+            created_at: reply.created_at,
+        };
+
+        // Emit socket realtime
+        const io = req.app.get('io');
+        io.emit(`newReply-${thread_id}`, result);
+
+        return res.status(201).json(result);
     } catch (error) {
-        console.error("Queue Error:", error);
-        return res.status(500).json({ error: "Gagal memproses antrean balasan" });
+        console.error(error);
+        return res.status(500).json({ error: "Gagal membuat balasan" });
     }
 };
