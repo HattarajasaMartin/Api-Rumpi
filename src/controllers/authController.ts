@@ -25,8 +25,7 @@ export const register = async (req: Request, res: Response) => {
 
         res.status(201).json({ message: "User Created", id: user.id });
 
-    } catch (error) {
-        console.error("REGISTER ERROR:", error); // ← tambahan
+    } catch {
         res.status(400).json({ error: "Username or Email already exists" });
     }
 };
@@ -71,8 +70,11 @@ export const login = async (req: Request, res: Response) => {
                 username: user.username,
                 full_name: user.full_name,
                 photo_profile: user.photo_profile,
+
+                // 🔥 FIX UTAMA (SWAP)
                 followers: user._count.following,
                 following: user._count.followers,
+
                 bio: user.bio
             }
         });
@@ -114,6 +116,7 @@ export const googleLogin = async (req: Request, res: Response) => {
             }
         });
 
+        // kalau belum ada → buat
         if (!user) {
             const baseUsername = email?.split('@')[0].toLowerCase();
 
@@ -153,8 +156,11 @@ export const googleLogin = async (req: Request, res: Response) => {
                 username: user.username,
                 full_name: user.full_name,
                 photo_profile: user.photo_profile,
+
+                // 🔥 FIX UTAMA (SWAP)
                 followers: user._count.following,
                 following: user._count.followers,
+
                 bio: user.bio
             }
         });
@@ -201,8 +207,11 @@ export const editProfile = async (req: AuthRequest, res: Response) => {
                 username: updatedUser.username,
                 full_name: updatedUser.full_name,
                 photo_profile: updatedUser.photo_profile,
+
+                // 🔥 FIX UTAMA (SWAP)
                 followers: updatedUser._count.following,
                 following: updatedUser._count.followers,
+
                 bio: updatedUser.bio,
             }
         });
