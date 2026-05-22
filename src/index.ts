@@ -9,7 +9,7 @@ import threadRoutes from './routes/threadRoutes';
 import replyRoutes from './routes/replyRoute';
 import followRoutes from './routes/followRoutes';
 import userRoutes from './routes/userRoutes';
-import searchRoutes from './routes/searchRoutes'; 
+import searchRoutes from './routes/searchRoutes';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './docs/swagger';
 
@@ -23,14 +23,11 @@ const allowedOrigins = [
 ];
 
 export const io = new Server(httpServer, {
-    cors: { 
+    cors: {
       origin: allowedOrigins,
       credentials: true
     }
 });
-
-import './workers/threadWorker';
-import './workers/replyWorker';
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(cors({
