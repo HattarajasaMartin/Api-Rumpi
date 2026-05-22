@@ -17,15 +17,26 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  /\.vercel\.app$/,
+];
+
 export const io = new Server(httpServer, {
-    cors: { origin: "http://localhost:5173" }
+    cors: { 
+      origin: allowedOrigins,
+      credentials: true
+    }
 });
 
 import './workers/threadWorker';
 import './workers/replyWorker';
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use(cors());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
