@@ -1,0 +1,50 @@
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: faidh@gmail.com
+        password:
+          type: string
+          example: "123456"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 2
+        username:
+          type: string
+          example: Fadhlan36
+        full_name:
+          type: string
+          example: Fadhlan Faidh 123
+        photo_profile:
+          type: string
+          nullable: true
+          example: null
+        followers:
+          type: integer
+          example: 1
+        following:
+          type: integer
+          example: 1
+        bio:
+          type: string
+          example: Ini akun keduaku
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: "#/components/schemas/User"

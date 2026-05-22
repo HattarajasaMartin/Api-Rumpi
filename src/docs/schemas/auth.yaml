@@ -1,0 +1,33 @@
+components:
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - fullname
+        - username
+      properties:
+        email:
+          type: string
+          format: email
+          example: fakhri@gmail.com
+        password:
+          type: string
+          example: fakhri123
+        fullname:
+          type: string
+          example: fakhri muzakki
+        username:
+          type: string
+          example: fakhri
+
+    RegisterResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: User Created
+        id:
+          type: integer
+          example: 13
