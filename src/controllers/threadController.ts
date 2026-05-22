@@ -1,14 +1,6 @@
 import { Response } from 'express';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middlewares/authMiddleware';
-import { Queue } from 'bullmq';
-
-const threadQueue = new Queue('thread-queue', {
-    connection: {
-        host: process.env.REDIS_HOST || '127.0.0.1',
-        port: Number(process.env.REDIS_PORT) || 6379
-    }
-});
 
 // GET ALL THREADS
 export const getThreads = async (req: AuthRequest, res: Response) => {
@@ -51,7 +43,7 @@ export const getThreads = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// GET THREAD DETAIL BY ID (Disesuaikan dengan Schema created_by)
+// GET THREAD DETAIL BY ID
 export const getThreadById = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
@@ -91,7 +83,7 @@ export const getThreadById = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// GET THREADS BY USER ID UNTUK DI PROFILE
+// GET THREADS BY USER ID
 export const getThreadsByUser = async (req: AuthRequest, res: Response) => {
     try {
         const { userId } = req.params;
@@ -132,25 +124,49 @@ export const getThreadsByUser = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// CREATE THREAD (Queue)
+// CREATE THREAD (langsung ke DB)
 export const createThread = async (req: AuthRequest, res: Response) => {
     try {
-        //  AMBIL DATA DARI REQUEST
         const { content } = req.body;
         const userId = req.user?.userId;
         const file = req.file;
 
-        if (!content) return res.status(400).json({ error: "Konten kosong" }); // validasi kalau konten kosong
+        if (!content) return res.status(400).json({ error: "Konten kosong" });
 
-        await threadQueue.add('new-thread-job', { // membuat worker standby
-            content,
-            image: file ? file.filename : null,
-            userId: userId as number, // Ini akan diproses worker menggunakan created_by
+        const thread = await prisma.thread.create({
+            data: {
+                content,
+                image: file ? file.filename : null,
+                created_by: userId as number,
+            },
+            include: {
+                user: {
+                    select: { username: true, full_name: true, photo_profile: true }
+                },
+                _count: {
+                    select: { likes: true, replies: true }
+                }
+            }
         });
 
-        return res.status(202).json({ message: "Postingan sedang diproses!" });
+        const result = {
+            id: thread.id,
+            content: thread.content,
+            image: thread.image,
+            avatar: thread.user.photo_profile,
+            username: thread.user.username,
+            name: thread.user.full_name,
+            likes: thread._count.likes,
+            replies: thread._count.replies,
+            isLiked: false,
+        };
+
+        const io = req.app.get('io');
+        io.emit('newThread', result);
+
+        return res.status(201).json(result);
     } catch (error) {
-        return res.status(500).json({ error: "Gagal" });
+        return res.status(500).json({ error: "Gagal membuat thread" });
     }
 };
 
